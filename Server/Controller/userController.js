@@ -2,7 +2,7 @@ const userModel = require("../Model/userModel");
 const twilio = require("../OTP");
 const client = require("twilio")(twilio.accountSID, twilio.authToken);
 
-export const addNumber = async (req, res) => {
+exports.addNumber = async (req, res) => {
   const { Number } = req.body;
 
   try {
@@ -21,7 +21,7 @@ export const addNumber = async (req, res) => {
   } catch (error) {}
 };
 
-export const verifyNumber = async (req, res) => {
+exports.verifyNumber = async (req, res) => {
   const { otp, Number } = req.body;
   try {
     client.verify
@@ -36,18 +36,34 @@ export const verifyNumber = async (req, res) => {
             Number,
             otpStatus: true,
           };
-          userModel.create(details).then((data) => {
-            res.status(201).json(data);
-          });
+          userModel.findOne({Number:Number}).then((data)=>{
+            if(data!=null){
+              userModel.updateOne({Number:Number},{$set:{otpStatus:true}}).then((data)=>{
+                res.status(200).json("OTP VALID")
+              })
+            }else{
+              userModel.create(details).then((data) => {
+                res.status(201).json("OTP VALID");
+              });
+            }
+          })
         } else {
           let details = {
             Number,
             otpStatus: false,
           };
-          userModel.create(details).then((data) => {
-            res.status(201).json(data);
-          });
-          res.status(401).json("Incorrect OTP");
+          userModel.findOne({Number:Number}).then((data)=>{
+            if(data!=null){
+              userModel.updateOne({Number:Number},{$set:{otpStatus:false}}).then((data)=>{
+                res.status(200).json("OTP INVALID")
+              })
+            }else{
+              userModel.create(details).then((data) => {
+                res.status(201).json("OTP INVALID");
+              });
+            }
+          })
+         
         }
       });
   } catch (error) {}
